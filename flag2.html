@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Singapore Flag Animation</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    body {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      transition: background 1s;
+    }
+
+    .sky {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      transition: background 2s ease;
+    }
+
+    .sun, .moon {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: -1;
+      transition: top 1s, opacity 1s;
+    }
+
+    .sun {
+      background: gold;
+      opacity: 0;
+    }
+
+    .moon {
+      background: #ddd;
+      box-shadow: inset -10px -10px 0 0 #aaa;
+      opacity: 0;
+    }
+
+    .flagpole {
+      width: 10px;
+      height: 400px;
+      background: #333;
+      position: relative;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    .flag {
+      position: absolute;
+      left: 10px;
+      width: 120px;
+      height: 80px;
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/48/Flag_of_Singapore.svg');
+      background-size: cover;
+      bottom: 0;
+      transition: filter 0.3s ease;
+    }
+
+    .flag:hover {
+      filter: brightness(1.1);
+    }
+
+    .flag::after {
+      content: "Click me";
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      background: rgba(255,255,255,0.8);
+      padding: 2px 6px;
+      border-radius: 4px;
+      opacity: 0.8;
+    }
+
+    @keyframes raiseFlag {
+      from { bottom: 0; }
+      to { bottom: 320px; }
+    }
+
+    @keyframes lowerFlag {
+      from { bottom: 320px; }
+      to { bottom: 0; }
+    }
+
+    #testPanel {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      display: none;
+      gap: 10px;
+      background: white;
+      padding: 10px;
+      z-index: 999;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #testPanel button {
+      background: #fff;
+      border: 2px solid #333;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+
+    #clock {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      z-index: 999;
+    }
+
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 1000;
+    }
+
+    /* Caption Popup */
+    #captionPanel {
+      position: fixed;
+      left: 10px;
+      bottom: 10px;
+      width: 380px;
+      max-width: 90vw;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 1000;
+      display: none;
+    }
+
+    #captionPanel.show {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #captionPanel h3 {
+      margin-top: 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #captionClose {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading Singapore Flag Ceremony...</div>
+
+  <div class="sky" id="sky"></div>
+  <div class="sun" id="sun"></div>
+  <div class="moon" id="moon"></div>
+
+  <div class="flagpole" id="flagpole">
+    <div class="flag" id="flag"></div>
+  </div>
+
+  <audio id="anthem" src="https://www.nhb.gov.sg/-/media/nhb/images/nhb2017/what-we-do/national-symbols/20191126-master-48khz-24bit-majulah-singapura-sso-2019---for-full-orchestra-with-choir.wav" preload="auto"></audio>
+
+  <div id="clock">Loading...</div>
+
+  <div id="testPanel">
+    <button id="testRaise">🎵 Raise with Anthem</button>
+    <button id="testLower">⬇️ Lower</button>
+    <hr>
+    <button id="set745am">☀️ Simulate 7:45am</button>
+    <button id="set12pm">🌤️ Simulate 12pm</button>
+    <button id="set6pm">🌇 Simulate 6pm</button>
+    <button id="set10pm">🌙 Simulate 10pm</button>
+    <hr>
+    <button id="returnLive">🔄 Return to Real Time</button>
+  </div>
+
+  <div id="captionPanel">
+    <div id="captionClose">✖</div>
+    <h3>A DAY IN MAJULAH SINGAPURA</h3>
+    <p>
+    Recall coming to school in the early morning, dropping everything to stand still when you hear the national anthem play. A truly local experience, almost united national memory. Brings back nostalgia for the simplier days of childhood, a sense of patriotism for the Singapore Spirit! Too alive to preserve in a museum but too forgotten to reminisce.
+    
+    <br><br>
+
+    A DAY IN MAJULAH SINGAPURA is an interactive webpage that lets you relive that daily experience at the back of your memory: morning assembly and flag-raising. It explores our National Identity and Memory and questions whether its place belongs in a museum or in our hearts.
+  </p>
+  </div>
+
+  <script>
+    const anthem = document.getElementById('anthem');
+    const flag = document.getElementById('flag');
+    const flagpole = document.getElementById('flagpole');
+    const testPanel = document.getElementById('testPanel');
+    const clock = document.getElementById('clock');
+    const loadingScreen = document.getElementById('loading');
+
+    const captionPanel = document.getElementById('captionPanel');
+    const captionClose = document.getElementById('captionClose');
+
+    let anthemDuration = 57;
+    let testHour = null;
+    let testMinute = 0;
+    let isTesting = false;
+    let alreadyRaised = false;
+    let alreadyLowered = false;
+    let updateInterval;
+    let isInitialized = false;
+
+    function initializeWithAudio() {
+      if (anthem.duration) {
+        anthemDuration = anthem.duration;
+        completeInitialization();
+      } else {
+        setTimeout(() => {
+          if (!isInitialized) completeInitialization();
+        }, 2000);
+      }
+    }
+
+    function completeInitialization() {
+      if (isInitialized) return;
+      isInitialized = true;
+      loadingScreen.style.display = 'none';
+      updateScene();
+      updateInterval = setInterval(updateScene, 1000);
+    }
+
+    function unlockAudio() {
+      anthem.play().then(() => {
+        anthem.pause();
+        anthem.currentTime = 0;
+      }).catch(() => {});
+    }
+    document.addEventListener('click', unlockAudio, { once: true });
+
+    initializeWithAudio();
+    anthem.addEventListener('loadedmetadata', () => {
+      anthemDuration = anthem.duration;
+      if (!isInitialized) completeInitialization();
+    });
+
+    function getSingaporeTime() {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Singapore',
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      const parts = formatter.formatToParts(now);
+      const dateParts = Object.fromEntries(parts.map(p => [p.type, p.value]));
+
+      const sgt = new Date(
+        `${dateParts.year}-${dateParts.month}-${dateParts.day}T${dateParts.hour}:${dateParts.minute}:${dateParts.second}`
+      );
+
+      if (testHour !== null) {
+        isTesting = true;
+        sgt.setHours(testHour);
+        sgt.setMinutes(testMinute);
+        sgt.setSeconds(0);
+      } else {
+        isTesting = false;
+      }
+
+      return sgt;
+    }
+
+    function stopAnimations() {
+      flag.style.animation = 'none';
+      void flag.offsetHeight;
+    }
+
+    function raiseFlag(playAnthem = false) {
+      stopAnimations();
+
+      if (isTesting) clearInterval(updateInterval);
+
+      if (playAnthem) {
+        anthem.currentTime = 0;
+        anthem.play().catch(() => {
+          document.body.addEventListener('click', () => anthem.play(), { once: true });
+        });
+      }
+
+      flag.style.animation = `raiseFlag ${anthemDuration}s linear forwards`;
+      setTimeout(() => {
+        flag.style.animation = 'none';
+        flag.style.bottom = '320px';
+        if (isTesting) updateInterval = setInterval(updateScene, 1000);
+      }, anthemDuration * 1000);
+    }
+
+    function lowerFlag() {
+      stopAnimations();
+
+      if (isTesting) clearInterval(updateInterval);
+
+      flag.style.animation = `lowerFlag ${anthemDuration}s linear forwards`;
+      setTimeout(() => {
+        flag.style.animation = 'none';
+        flag.style.bottom = '0';
+        if (isTesting) updateInterval = setInterval(updateScene, 1000);
+      }, anthemDuration * 1000);
+    }
+
+    function updateScene() {
+      const sky = document.getElementById('sky');
+      const sun = document.getElementById('sun');
+      const moon = document.getElementById('moon');
+      const now = getSingaporeTime();
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+      const second = now.getSeconds();
+
+      clock.textContent = `SGT: ${now.toTimeString().split(' ')[0]}`;
+
+      // Sky update
+      if (hour >= 7 && hour < 12) {
+        sky.style.background = "linear-gradient(to top, #aee1f9, #fff9c4)";
+        sun.style.opacity = 1;
+        moon.style.opacity = 0;
+        sun.style.top = "20%";
+      } else if (hour >= 12 && hour < 18) {
+        sky.style.background = "linear-gradient(to top, #87ceeb, #ffffff)";
+        sun.style.opacity = 1;
+        moon.style.opacity = 0;
+        sun.style.top = "10%";
+      } else if (hour >= 18 && hour < 19) {
+        sky.style.background = "linear-gradient(to top, #ffcc80, #6b3e26)";
+        sun.style.opacity = 1;
+        moon.style.opacity = 0;
+        sun.style.top = "30%";
+      } else {
+        sky.style.background = "linear-gradient(to top, #0d1b2a, #1b263b)";
+        sun.style.opacity = 0;
+        moon.style.opacity = 1;
+        moon.style.top = "15%";
+      }
+
+      // Flag logic
+      if (isTesting) {
+        if (hour === 7 && minute === 45 && !alreadyRaised) {
+          alreadyRaised = true;
+          alreadyLowered = false;
+          raiseFlag(true);
+        } else if (hour === 18 && minute === 0 && !alreadyLowered) {
+          alreadyLowered = true;
+          alreadyRaised = false;
+          lowerFlag();
+        } else if ((hour > 7 || (hour === 7 && minute > 45)) && hour < 18) {
+          alreadyRaised = true;
+          alreadyLowered = false;
+          stopAnimations();
+          flag.style.bottom = "320px";
+        } else {
+          alreadyLowered = true;
+          alreadyRaised = false;
+          stopAnimations();
+          flag.style.bottom = "0";
+        }
+      } else {
+        if (hour === 7 && minute === 45 && second === 0 && !alreadyRaised) {
+          alreadyRaised = true;
+          alreadyLowered = false;
+          raiseFlag(true);
+        } else if (hour === 18 && minute === 0 && second === 0 && !alreadyLowered) {
+          alreadyLowered = true;
+          alreadyRaised = false;
+          lowerFlag();
+        }
+
+        if ((hour > 7 || (hour === 7 && minute > 45)) && hour < 18) {
+          stopAnimations();
+          flag.style.bottom = "320px";
+        } else {
+          stopAnimations();
+          flag.style.bottom = "0";
+        }
+
+        if (hour === 0 && minute === 0 && second === 0) {
+          alreadyRaised = false;
+          alreadyLowered = false;
+        }
+      }
+    }
+
+    // Test controls
+    window.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 't') {
+        testPanel.style.display = testPanel.style.display === 'none' ? 'flex' : 'none';
+      }
+    });
+
+    document.getElementById('testRaise').onclick = () => raiseFlag(true);
+    document.getElementById('testLower').onclick = () => lowerFlag();
+    document.getElementById('set745am').onclick = () => { 
+      testHour = 7; testMinute = 45; alreadyRaised = false; alreadyLowered = false; updateScene(); 
+    };
+    document.getElementById('set12pm').onclick = () => { 
+      testHour = 12; testMinute = 0; updateScene(); 
+    };
+    document.getElementById('set6pm').onclick = () => { 
+      testHour = 18; testMinute = 0; alreadyRaised = false; alreadyLowered = false; updateScene(); 
+    };
+    document.getElementById('set10pm').onclick = () => { 
+      testHour = 22; testMinute = 0; updateScene(); 
+    };
+    document.getElementById('returnLive').onclick = () => { 
+      testHour = null; testMinute = 0; alreadyRaised = false; alreadyLowered = false; updateScene(); 
+    };
+
+    // Caption Panel
+    flagpole.addEventListener('click', () => {
+      captionPanel.classList.add('show');
+    });
+
+    captionClose.addEventListener('click', () => {
+      captionPanel.classList.remove('show');
+    });
+  </script>
+</body>
+</html>
